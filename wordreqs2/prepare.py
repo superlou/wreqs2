@@ -8,7 +8,7 @@ def copy_docs(config):
     # Using Windows' xcopy is a workaround.
     for doc_id, doc_config in config["docs"].items():
         if "import_from" in doc_config:
-            src = doc_config["copy_from"]
+            src = doc_config["import_from"]
             dst = doc_config["file"]
             suppress_overwrite_prompt = "/Y"
             assume_dst_is_file = "/-I"

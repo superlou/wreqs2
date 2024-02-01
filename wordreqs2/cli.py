@@ -62,15 +62,14 @@ def run_traces(config):
 
 def run_cli():
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=["import", "prepare", "trace", "lint"])
+    parser.add_argument("action", choices=["update", "trace", "lint"])
     args = parser.parse_args()
 
     Path("tmp").mkdir(exist_ok=True)
     config = tomllib.load(open("wreqs.toml", "rb"))
 
-    if args.action == "import":
+    if args.action == "update":
         copy_docs(config)
-    elif args.action == "prepare":
         run_prepare(config)
     elif args.action == "trace":
         run_traces(config)
