@@ -1,5 +1,6 @@
 import shutil
 import subprocess
+from multiprocessing import Pool
 from .docx_to_md import word_to_md, newline_after_meta
 
 
@@ -37,9 +38,7 @@ def run_transforms(doc_id :str, filename: str, transforms: list):
 
 
 def run_prepare(config):
-    for doc_id, doc_config in config["docs"].items():
-        transforms = doc_config.get("transforms", [])
-        if len(transforms) == 0:
-            raise NotImplementedError()
-        else:
-            run_transforms(doc_id, doc_config["file"], transforms)
+    with Pool(4) as p:
+        args = [(doc_id, doc_config["file"], doc_config.get("transforms", []))
+                for doc_id, doc_config in config["docs"].items()]
+        p.starmap(run_transforms, args)
