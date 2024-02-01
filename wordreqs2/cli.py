@@ -1,9 +1,9 @@
 import tomllib
 from pathlib import Path
-import shutil
 import pandas as pd
-from .docx_to_md import word_to_md, newline_after_meta
-from . import md_spec
+import argparse
+from .load import build_tables, get_spec
+from .prepare import run_prepare, copy_docs
 
 
 def trace_down(parent, children):
@@ -52,82 +52,6 @@ def trace_down(parent, children):
     print(df)
 
 
-def run_transforms(doc_id :str, filename: str, transforms: list):
-    md_filename = f"tmp/{doc_id}.md"
-    shutil.copy(filename, md_filename)
-
-    for transform in transforms:
-        print(doc_id, transform)
-        if transform == "docx-to-md":
-            word_to_md(md_filename, md_filename)
-        elif transform == "newline-after-meta":
-            newline_after_meta(md_filename, md_filename)
-
-
-def run_prepare(config):
-    for doc_id, doc_config in config["docs"].items():
-        transforms = doc_config.get("transforms", [])
-        if len(transforms) == 0:
-            raise NotImplementedError()
-        else:
-            run_transforms(doc_id, doc_config["file"], transforms)
-
-
-def get_spec(doc_id: str):
-    spec = md_spec.parse_file(f"tmp/{doc_id}.md")
-    return spec
-
-
-
-def get_reqs_as_df(doc_id: str) -> pd.DataFrame:
-    spec = get_spec(doc_id)
-    data = {
-        "doc_ids": [],
-        "req_ids": [],
-        "contents": [],
-    }
-
-    for req in spec.reqs:
-        data["doc_ids"].append(doc_id)
-        data["req_ids"].append(req.id)
-        data["contents"].append(req.content)
-    
-    return pd.DataFrame(data)
-
-
-def get_trace_as_df(doc_id: str, parent_doc_id: str) -> pd.DataFrame:
-    spec = get_spec(doc_id)
-    data = {
-        "doc_ids": [],
-        "req_ids": [],
-        "to_doc_id": [],
-        "to_req_id": [],
-    }
-
-    for req in spec.reqs:
-        for req_trace_id in req.req_trace_ids:
-            data["doc_ids"].append(doc_id)
-            data["req_ids"].append(req.id)
-            data["to_doc_id"].append(parent_doc_id)
-            data["to_req_id"].append(req_trace_id)
-
-    return pd.DataFrame(data)
-
-
-def build_tables(config) -> tuple[pd.DataFrame, pd.DataFrame]:
-    # Table of requirements
-    spec_req_dfs = [get_reqs_as_df(doc_id) for doc_id in config["docs"]]
-    req_df = pd.concat(spec_req_dfs, ignore_index=True)
-
-    # Trace table
-    spec_trace_dfs = [get_trace_as_df(doc_id, doc_config["parent"])
-                      for doc_id, doc_config in config["docs"].items()
-                      if "parent" in doc_config]
-    trace_df = pd.concat(spec_trace_dfs, ignore_index=True)
-
-    return req_df, trace_df
-
-
 def run_traces(config):
     for trace_id, trace_config in config["traces"].items():
         if trace_config["direction"] == "down":
@@ -137,11 +61,22 @@ def run_traces(config):
 
 
 def run_cli():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-nc", "--no-copy", action="store_true")
+    parser.add_argument("-np", "--no-prepare", action="store_true")
+    args = parser.parse_args()
+
     Path("tmp").mkdir(exist_ok=True)
     config = tomllib.load(open("wreqs.toml", "rb"))
-    # run_prepare(config)
+
+    if not args.no_copy:
+        copy_docs(config)
+
+    if not args.no_prepare:
+        run_prepare(config)
+
     run_traces(config)
     
-    # req_df, trace_df = build_tables(config)
-    # print(req_df)
-    # print(trace_df)
+    req_df, trace_df = build_tables(config)
+    print(req_df)
+    print(trace_df)
