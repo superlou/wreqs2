@@ -7,7 +7,7 @@ def copy_docs(config):
     # Using shutil copy gets permissions denied if the file is open.
     # Using Windows' xcopy is a workaround.
     for doc_id, doc_config in config["docs"].items():
-        if "copy_from" in doc_config:
+        if "import_from" in doc_config:
             src = doc_config["copy_from"]
             dst = doc_config["file"]
             suppress_overwrite_prompt = "/Y"
@@ -21,7 +21,7 @@ def copy_docs(config):
                 ],
                 stdout=subprocess.DEVNULL
             )
-            print(f"🚚 Copied {doc_id} to project")
+            print(f"🚚 Imported {doc_id} to project")
 
 
 def run_transforms(doc_id :str, filename: str, transforms: list):

@@ -62,21 +62,19 @@ def run_traces(config):
 
 def run_cli():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-nc", "--no-copy", action="store_true")
-    parser.add_argument("-np", "--no-prepare", action="store_true")
+    parser.add_argument("action", choices=["import", "prepare", "trace", "lint"])
     args = parser.parse_args()
 
     Path("tmp").mkdir(exist_ok=True)
     config = tomllib.load(open("wreqs.toml", "rb"))
 
-    if not args.no_copy:
+    if args.action == "import":
         copy_docs(config)
-
-    if not args.no_prepare:
+    elif args.action == "prepare":
         run_prepare(config)
-
-    run_traces(config)
+    elif args.action == "trace":
+        run_traces(config)
     
-    req_df, trace_df = build_tables(config)
-    print(req_df)
-    print(trace_df)
+    # req_df, trace_df = build_tables(config)
+    # print(req_df)
+    # print(trace_df)
