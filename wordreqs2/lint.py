@@ -1,3 +1,8 @@
+from textwrap import wrap
+from rich.console import Console
+from rich.text import Text
+
+
 class Lint:
     def __init__(self, doc_id):
         self.doc_id = doc_id
@@ -8,8 +13,20 @@ class MalformedReqID(Lint):
         super().__init__(doc_id)
         self.malformed_id = malformed_id
     
-    def print(self):
-        print(f"<{self.doc_id}> {type(self).__name__}: \"{self.malformed_id}\"")
+    @property
+    def msg(self):
+        return f"<{self.doc_id}:{type(self).__name__}> \"{self.malformed_id}\""
+
+
+class DuplicateID(Lint):
+    def __init__(self, doc_id, duplicate_id, content):
+        super().__init__(doc_id)
+        self.duplicate_id = duplicate_id
+        self.content = content
+
+    @property
+    def msg(self):
+        return f"<{self.doc_id}:{type(self).__name__}> [{self.duplicate_id}] {self.content}"
 
 
 def check_malformed_req_id(reqs, config):
@@ -34,9 +51,22 @@ def check_malformed_req_id(reqs, config):
     return lints
 
 
+def check_duplicate_req_id(reqs):
+    lints = []
+
+    duplicated_reqs = reqs.loc[reqs.duplicated("req_id", keep=False)]
+    lints = [DuplicateID(row.doc_id, row.req_id, row.contents)
+             for i, row in duplicated_reqs.iterrows()]
+
+    return lints
+
+
 def run_lint(req_df, trace_df, config):
     lints = []
     lints += check_malformed_req_id(req_df, config)
+    lints += check_duplicate_req_id(req_df)
+
+    console = Console(soft_wrap=True, highlight=False)
 
     for lint in lints:
-        lint.print()
+        console.print(lint.msg.split("\n")[0], overflow="ellipsis")
