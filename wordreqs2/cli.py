@@ -70,16 +70,16 @@ def run_cli():
     Path("tmp").mkdir(exist_ok=True)
     config = tomllib.load(open("wreqs.toml", "rb"))
 
-    req_df, trace_df = build_tables(config)
-
     if args.action == "update":
         copy_docs(config)
         run_prepare(config)
     elif args.action == "trace":
         run_traces(config)
     elif args.action == "status":
+        req_df, trace_df = build_tables(config)
         run_status(req_df, config)
     elif args.action == "lint":
+        req_df, trace_df = build_tables(config)
         run_lint(req_df, trace_df, config)
 
     # print(req_df)
