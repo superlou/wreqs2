@@ -1,4 +1,5 @@
 import shutil
+import os
 import subprocess
 from multiprocessing import Pool
 from .docx_to_md import word_to_md, newline_after_meta
@@ -7,20 +8,25 @@ from .docx_to_md import word_to_md, newline_after_meta
 def copy_docs(config):
     # Using shutil copy gets permissions denied if the file is open.
     # Using Windows' xcopy is a workaround.
+    # Also, xcopy doesn't always seem to have the /-I flag, so a file
+    # is made manually first, so it doesn't prompt if the dst is a
+    # file or folder.
     for doc_id, doc_config in config["docs"].items():
         if "import_from" in doc_config:
             src = doc_config["import_from"]
             dst = doc_config["file"]
+
+            if not os.path.exists(dst):
+                with open(dst, "w"):
+                    pass
+
             suppress_overwrite_prompt = "/Y"
-            assume_dst_is_file = "/-I"
             hide_file_names = "/Q"
             subprocess.run(
                 [
-                    "xcopy", src, dst, 
-                    suppress_overwrite_prompt, assume_dst_is_file,
-                    hide_file_names
+                    "xcopy", src, dst, hide_file_names, suppress_overwrite_prompt,
                 ],
-                stdout=subprocess.DEVNULL
+                stdout=subprocess.DEVNULL, shell=True
             )
             print(f"🚚 Imported {doc_id} to project")
 
