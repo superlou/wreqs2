@@ -30,12 +30,12 @@ def run_transforms(doc_id :str, filename: str, transforms: list):
     shutil.copy(filename, md_filename)
 
     for transform in transforms:
-        print(f"🔧 Transforming {doc_id} by {transform}")
         if transform == "docx-to-md":
             word_to_md(md_filename, md_filename)
         elif transform == "newline-after-meta":
             newline_after_meta(md_filename, md_filename)
 
+        print(f"🔧 Transformed {doc_id} by {transform}")
 
 def run_prepare(config):
     with Pool(4) as p:
