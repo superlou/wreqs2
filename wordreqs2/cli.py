@@ -5,6 +5,7 @@ import argparse
 from .load import build_tables, get_spec
 from .prepare import run_prepare, copy_docs
 from .status import run_status
+from .lint import run_lint
 
 
 def trace_down(parent, children):
@@ -78,6 +79,8 @@ def run_cli():
         run_traces(config)
     elif args.action == "status":
         run_status(req_df, config)
+    elif args.action == "lint":
+        run_lint(req_df, trace_df, config)
 
     # print(req_df)
     # print(trace_df)
