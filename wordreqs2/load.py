@@ -10,14 +10,14 @@ def get_spec(doc_id: str):
 def get_reqs_as_df(doc_id: str) -> pd.DataFrame:
     spec = get_spec(doc_id)
     data = {
-        "doc_ids": [],
-        "req_ids": [],
+        "doc_id": [],
+        "req_id": [],
         "contents": [],
     }
 
     for req in spec.reqs:
-        data["doc_ids"].append(doc_id)
-        data["req_ids"].append(req.id)
+        data["doc_id"].append(doc_id)
+        data["req_id"].append(req.id)
         data["contents"].append(req.content)
     
     return pd.DataFrame(data)
@@ -26,16 +26,16 @@ def get_reqs_as_df(doc_id: str) -> pd.DataFrame:
 def get_trace_as_df(doc_id: str, parent_doc_id: str) -> pd.DataFrame:
     spec = get_spec(doc_id)
     data = {
-        "doc_ids": [],
-        "req_ids": [],
+        "doc_id": [],
+        "req_id": [],
         "to_doc_id": [],
         "to_req_id": [],
     }
 
     for req in spec.reqs:
         for req_trace_id in req.req_trace_ids:
-            data["doc_ids"].append(doc_id)
-            data["req_ids"].append(req.id)
+            data["doc_id"].append(doc_id)
+            data["req_id"].append(req.id)
             data["to_doc_id"].append(parent_doc_id)
             data["to_req_id"].append(req_trace_id)
 

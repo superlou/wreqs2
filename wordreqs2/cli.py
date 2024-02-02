@@ -4,6 +4,7 @@ import pandas as pd
 import argparse
 from .load import build_tables, get_spec
 from .prepare import run_prepare, copy_docs
+from .status import run_status
 
 
 def trace_down(parent, children):
@@ -62,18 +63,21 @@ def run_traces(config):
 
 def run_cli():
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=["update", "trace", "lint"])
+    parser.add_argument("action", choices=["update", "trace", "lint", "status"])
     args = parser.parse_args()
 
     Path("tmp").mkdir(exist_ok=True)
     config = tomllib.load(open("wreqs.toml", "rb"))
+
+    req_df, trace_df = build_tables(config)
 
     if args.action == "update":
         copy_docs(config)
         run_prepare(config)
     elif args.action == "trace":
         run_traces(config)
-    
-    # req_df, trace_df = build_tables(config)
+    elif args.action == "status":
+        run_status(req_df, config)
+
     # print(req_df)
     # print(trace_df)

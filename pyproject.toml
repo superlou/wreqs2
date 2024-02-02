@@ -6,7 +6,10 @@ build-backend = "setuptools.build_meta"
 name = "word-reqs-2"
 version = "0.1.0"
 readme = "README.md"
-dependencies = []
+dependencies = [
+    "pandas",
+    "rich",
+]
 
 [project.scripts]
 wreqs = "wordreqs2:run_cli"
