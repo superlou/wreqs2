@@ -3,16 +3,16 @@ from rich.console import Console
 from rich.table import Table
 
 
-def safe_int(x: str):
+def int_or_default(x: str, default: int):
     try:
         return int(x)
     except ValueError:
-        return 0
+        return default
 
 
 def find_next_id(reqs, prefix_map) -> pd.Series:
     reqs["prefix"] = reqs.doc_id.apply(lambda doc_id: prefix_map[doc_id])
-    reqs["req_num"] = [safe_int(id.replace(prefix, ""))
+    reqs["req_num"] = [int_or_default(id.replace(prefix, ""), 0)
                        for id, prefix in zip(reqs.req_id, reqs.prefix)]
 
     reqs_max = reqs.groupby("doc_id").max()
