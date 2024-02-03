@@ -66,8 +66,7 @@ class Req():
             req_id = req_topic
             self.req_trace_ids = []
 
-        req_id = req_id.strip()
-        self.id = req_id if req_id != "" else None
+        self.id = req_id.strip()
         self.content = ''
 
     def add_content_line(self, line: str):
