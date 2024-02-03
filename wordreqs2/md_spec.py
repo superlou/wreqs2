@@ -47,10 +47,12 @@ class Req():
     id: str
     content: str
     req_trace_ids: list[str]
+    raw_metadata: str
 
     CUSTOM_STYLE_PATTERN = r'\[([\w: ]+)]\{custom-style="([\w ]+)"\}'
 
     def __init__(self, meta_line: str):
+        self.raw_metadata = meta_line
         line = meta_line.replace(r'\[', '[')
         line = line.replace(r'\]', ']')
         topics = line.split(']')

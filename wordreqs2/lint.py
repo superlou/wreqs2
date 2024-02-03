@@ -5,28 +5,29 @@ from rich.text import Text
 
 class Lint:
     def __init__(self, doc_id):
-        self.doc_id = doc_id
+        pass
 
 
 class MalformedReqID(Lint):
-    def __init__(self, doc_id, malformed_id):
-        super().__init__(doc_id)
+    def __init__(self, doc_id, malformed_id, content):
+        self.doc_id = doc_id
         self.malformed_id = malformed_id
+        self.content = content
     
     @property
     def msg(self):
-        return f"<{self.doc_id}:{type(self).__name__}> \"{self.malformed_id}\""
+        return f"{self.doc_id}:{type(self).__name__} \\[{self.malformed_id}] {self.content}"
 
 
 class DuplicateID(Lint):
     def __init__(self, doc_id, duplicate_id, content):
-        super().__init__(doc_id)
+        self.doc_id = doc_id
         self.duplicate_id = duplicate_id
         self.content = content
 
     @property
     def msg(self):
-        return f"<{self.doc_id}:{type(self).__name__}> [{self.duplicate_id}] {self.content}"
+        return f"{self.doc_id}:{type(self).__name__} \\[{self.duplicate_id}] {self.content}"
 
 
 def check_malformed_req_id(reqs, config):
@@ -45,7 +46,7 @@ def check_malformed_req_id(reqs, config):
 
         if is_bad:
             lints.append(
-                MalformedReqID(req.doc_id, req.req_id)
+                MalformedReqID(req.doc_id, req.req_id, req.contents)
             )
 
     return lints
