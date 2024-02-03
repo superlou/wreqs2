@@ -1,4 +1,5 @@
 from enum import Enum
+from dataclasses import dataclass
 import re
 from .util import flatten
 
@@ -41,7 +42,12 @@ class Heading():
         self.content = line.replace('#', '').strip()
 
 
+@dataclass
 class Req():
+    id: str
+    content: str
+    req_trace_ids: list[str]
+
     CUSTOM_STYLE_PATTERN = r'\[([\w: ]+)]\{custom-style="([\w ]+)"\}'
 
     def __init__(self, meta_line: str):
@@ -67,7 +73,7 @@ class Req():
             self.req_trace_ids = []
 
         self.id = req_id.strip()
-        self.content = ''
+        self.content = ""
 
     def add_content_line(self, line: str):
         self.content += line
