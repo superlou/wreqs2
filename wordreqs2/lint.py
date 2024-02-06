@@ -1,4 +1,6 @@
 from rich.console import Console
+from rich.table import Table
+import pandas as pd
 
 
 class Lint:
@@ -96,3 +98,22 @@ def run_lint(req_df, trace_df, config):
 
     for lint in lints:
         console.print(lint.msg.split("\n")[0], overflow="ellipsis")
+    
+    # Make summary
+    df = pd.DataFrame(data={"lints": lints})
+    df["lint_type"] = df.lints.apply(lambda l: type(l).__name__)
+    df["doc_id"] = df.lints.apply(lambda l: l.doc_id)
+    df = df.groupby(["lint_type", "doc_id"]).count().lints
+    df = df.unstack("doc_id", fill_value=0)
+    
+    print()
+
+    table = Table()
+    table.add_column("Lint")
+    for col in df.columns:
+        table.add_column(col)
+    
+    for lint_type, row in df.iterrows():
+        table.add_row(str(lint_type), *[str(field) for field in row.values])
+
+    console.print(table)
