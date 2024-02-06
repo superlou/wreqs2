@@ -1,6 +1,4 @@
-from textwrap import wrap
 from rich.console import Console
-from rich.text import Text
 
 
 class Lint:
@@ -30,7 +28,19 @@ class DuplicateID(Lint):
         return f"{self.doc_id}:{type(self).__name__} \\[{self.duplicate_id}] {self.content}"
 
 
-def check_malformed_req_id(reqs, config):
+class TracedReqNotFound(Lint):
+    def __init__(self, doc_id, req_id, parent_doc_id, parent_req_id):
+        self.doc_id = doc_id
+        self.req_id = req_id
+        self.parent_doc_id = parent_doc_id
+        self.parent_req_id = parent_req_id
+
+    @property
+    def msg(self):
+        return f"{self.doc_id}:{type(self).__name__} \\[{self.req_id}] Requirement \"{self.parent_req_id}\" not found in {self.parent_doc_id}"
+
+
+def check_malformed_req_id(reqs, config) -> []:
     lints = []
 
     reqs["prefix"] = reqs.doc_id.apply(lambda doc_id: config["docs"][doc_id]["req_id_prefix"])
@@ -52,12 +62,26 @@ def check_malformed_req_id(reqs, config):
     return lints
 
 
-def check_duplicate_req_id(reqs):
-    lints = []
-
+def check_duplicate_req_id(reqs) -> []:
     duplicated_reqs = reqs.loc[reqs.duplicated("req_id", keep=False)]
     lints = [DuplicateID(row.doc_id, row.req_id, row.contents)
              for i, row in duplicated_reqs.iterrows()]
+
+    return lints
+
+
+def check_trace_req_not_in_parent(reqs, traces) -> []:
+    matched = traces.merge(
+        reqs, how="left",
+        left_on=["to_doc_id", "to_req_id"],
+        right_on=["doc_id", "req_id"],
+        suffixes=[None, "_parent"]
+    ).drop(["contents", "prefix"], axis=1)
+
+    unfound = matched[matched.req_id_parent.isnull()]
+
+    lints = [TracedReqNotFound(row.doc_id, row.req_id, row.to_doc_id, row.to_req_id)
+             for i, row in unfound.iterrows()]
 
     return lints
 
@@ -66,6 +90,7 @@ def run_lint(req_df, trace_df, config):
     lints = []
     lints += check_malformed_req_id(req_df, config)
     lints += check_duplicate_req_id(req_df)
+    lints += check_trace_req_not_in_parent(req_df, trace_df)
 
     console = Console(soft_wrap=True, highlight=False)
 
