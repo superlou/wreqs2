@@ -32,3 +32,11 @@ def trace_down(parent: str, children: list[str], reqs: DataFrame, traces: DataFr
 
     console = Console()
     console.print(table)
+
+
+def run_traces(config, reqs: DataFrame, traces: DataFrame):
+    for trace_id, trace_config in config["traces"].items():
+        if trace_config["direction"] == "down":
+            parent = trace_config["from"]
+            children = trace_config["to"]
+            trace_down(parent, children, reqs, traces)

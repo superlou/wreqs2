@@ -6,15 +6,7 @@ from .load import build_tables, get_spec
 from .prepare import run_prepare, copy_docs
 from .status import run_status
 from .lint import run_lint
-from .trace import trace_down
-
-
-def run_traces(config, reqs: pd.DataFrame, traces: pd.DataFrame):
-    for trace_id, trace_config in config["traces"].items():
-        if trace_config["direction"] == "down":
-            parent = trace_config["from"]
-            children = trace_config["to"]
-            trace_down(parent, children, reqs, traces)
+from .trace import run_traces
 
 
 def run_cli():
@@ -37,6 +29,3 @@ def run_cli():
     elif args.action == "lint":
         req_df, trace_df = build_tables(config)
         run_lint(req_df, trace_df, config)
-
-    # print(req_df)
-    # print(trace_df)
