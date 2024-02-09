@@ -1,4 +1,5 @@
 from typing import Self
+from dataclasses import dataclass
 from rich.console import Console
 from rich.table import Table
 import pandas as pd
@@ -9,16 +10,18 @@ class Lint:
         pass
 
 
-class MalformedReqID(Lint):
-    def __init__(self, doc_id, malformed_id, content):
-        self.doc_id = doc_id
-        self.malformed_id = malformed_id
-        self.content = content
-    
+@dataclass
+class BasicDocReqLint(Lint):
+    doc_id: str
+    req_id: str
+    content: str
+
     @property
     def msg(self):
-        return f"{self.doc_id}:{type(self).__name__} \\[{self.malformed_id}] {self.content}"
+        return f"{self.doc_id}:{type(self).__name__} \\[{self.req_id}] {self.content}"
 
+
+class MalformedReqID(BasicDocReqLint):
     @classmethod
     def check(cls, reqs, config) -> list[Self]:
         lints = []
@@ -42,21 +45,22 @@ class MalformedReqID(Lint):
         return lints
 
 
-class DuplicateID(Lint):
-    def __init__(self, doc_id, duplicate_id, content):
-        self.doc_id = doc_id
-        self.duplicate_id = duplicate_id
-        self.content = content
-
-    @property
-    def msg(self):
-        return f"{self.doc_id}:{type(self).__name__} \\[{self.duplicate_id}] {self.content}"
-
+class DuplicateID(BasicDocReqLint):
     @classmethod
     def check(cls, reqs) -> list[Self]:
         duplicated_reqs = reqs.loc[reqs.duplicated("req_id", keep=False)]
         lints = [cls(row.doc_id, row.req_id, row.contents)
                 for i, row in duplicated_reqs.iterrows()]
+        return lints
+
+
+class NoShallOrMay(BasicDocReqLint):
+    @classmethod
+    def check(cls, reqs) -> list[Self]:
+        lints = [
+            cls(req.doc_id, req.req_id, req.contents) 
+            for i, req in reqs[~reqs.contents.str.contains("shall|may")].iterrows()
+        ]
         return lints
 
 
@@ -92,6 +96,7 @@ def run_lint(req_df, trace_df, config):
     lints = []
     lints += MalformedReqID.check(req_df, config)
     lints += DuplicateID.check(req_df)
+    lints += NoShallOrMay.check(req_df)
     lints += TracedReqNotFound.check(req_df, trace_df)
 
     console = Console(soft_wrap=True, highlight=False)
