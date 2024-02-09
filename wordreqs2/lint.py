@@ -1,3 +1,4 @@
+from typing import Self
 from rich.console import Console
 from rich.table import Table
 import pandas as pd
@@ -18,6 +19,28 @@ class MalformedReqID(Lint):
     def msg(self):
         return f"{self.doc_id}:{type(self).__name__} \\[{self.malformed_id}] {self.content}"
 
+    @classmethod
+    def check(cls, reqs, config) -> list[Self]:
+        lints = []
+
+        reqs["prefix"] = reqs.doc_id.apply(lambda doc_id: config["docs"][doc_id]["req_id_prefix"])
+
+        for i, req in reqs.iterrows():
+            is_bad = False
+
+            if not req.req_id.startswith(req.prefix):
+                is_bad = True
+
+            if not req.req_id.replace(req.prefix, "").isdigit():
+                is_bad = True
+
+            if is_bad:
+                lints.append(
+                    cls(req.doc_id, req.req_id, req.contents)
+                )
+
+        return lints
+
 
 class DuplicateID(Lint):
     def __init__(self, doc_id, duplicate_id, content):
@@ -28,6 +51,13 @@ class DuplicateID(Lint):
     @property
     def msg(self):
         return f"{self.doc_id}:{type(self).__name__} \\[{self.duplicate_id}] {self.content}"
+
+    @classmethod
+    def check(cls, reqs) -> list[Self]:
+        duplicated_reqs = reqs.loc[reqs.duplicated("req_id", keep=False)]
+        lints = [cls(row.doc_id, row.req_id, row.contents)
+                for i, row in duplicated_reqs.iterrows()]
+        return lints
 
 
 class TracedReqNotFound(Lint):
@@ -41,58 +71,28 @@ class TracedReqNotFound(Lint):
     def msg(self):
         return f"{self.doc_id}:{type(self).__name__} \\[{self.req_id}] Requirement \"{self.parent_req_id}\" not found in {self.parent_doc_id}"
 
+    @classmethod
+    def check(cls, reqs, traces) -> list[Self]:
+        matched = traces.merge(
+            reqs, how="left",
+            left_on=["to_doc_id", "to_req_id"],
+            right_on=["doc_id", "req_id"],
+            suffixes=[None, "_parent"]
+        ).drop(["contents", "prefix"], axis=1)
 
-def check_malformed_req_id(reqs, config) -> []:
-    lints = []
+        unfound = matched[matched.req_id_parent.isnull()]
 
-    reqs["prefix"] = reqs.doc_id.apply(lambda doc_id: config["docs"][doc_id]["req_id_prefix"])
+        lints = [cls(row.doc_id, row.req_id, row.to_doc_id, row.to_req_id)
+                for i, row in unfound.iterrows()]
 
-    for i, req in reqs.iterrows():
-        is_bad = False
-
-        if not req.req_id.startswith(req.prefix):
-            is_bad = True
-
-        if not req.req_id.replace(req.prefix, "").isdigit():
-            is_bad = True
-
-        if is_bad:
-            lints.append(
-                MalformedReqID(req.doc_id, req.req_id, req.contents)
-            )
-
-    return lints
-
-
-def check_duplicate_req_id(reqs) -> []:
-    duplicated_reqs = reqs.loc[reqs.duplicated("req_id", keep=False)]
-    lints = [DuplicateID(row.doc_id, row.req_id, row.contents)
-             for i, row in duplicated_reqs.iterrows()]
-
-    return lints
-
-
-def check_trace_req_not_in_parent(reqs, traces) -> []:
-    matched = traces.merge(
-        reqs, how="left",
-        left_on=["to_doc_id", "to_req_id"],
-        right_on=["doc_id", "req_id"],
-        suffixes=[None, "_parent"]
-    ).drop(["contents", "prefix"], axis=1)
-
-    unfound = matched[matched.req_id_parent.isnull()]
-
-    lints = [TracedReqNotFound(row.doc_id, row.req_id, row.to_doc_id, row.to_req_id)
-             for i, row in unfound.iterrows()]
-
-    return lints
+        return lints
 
 
 def run_lint(req_df, trace_df, config):
     lints = []
-    lints += check_malformed_req_id(req_df, config)
-    lints += check_duplicate_req_id(req_df)
-    lints += check_trace_req_not_in_parent(req_df, trace_df)
+    lints += MalformedReqID.check(req_df, config)
+    lints += DuplicateID.check(req_df)
+    lints += TracedReqNotFound.check(req_df, trace_df)
 
     console = Console(soft_wrap=True, highlight=False)
 
