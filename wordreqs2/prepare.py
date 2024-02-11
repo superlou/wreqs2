@@ -5,13 +5,13 @@ from multiprocessing import Pool
 from .docx_to_md import word_to_md, newline_after_meta
 
 
-def copy_docs(config):
+def copy_docs(doc_configs):
     # Using shutil copy gets permissions denied if the file is open.
     # Using Windows' xcopy is a workaround.
     # Also, xcopy doesn't always seem to have the /-I flag, so a file
     # is made manually first, so it doesn't prompt if the dst is a
     # file or folder.
-    for doc_id, doc_config in config["docs"].items():
+    for doc_id, doc_config in doc_configs.items():
         if "import_from" in doc_config:
             src = doc_config["import_from"]
             dst = doc_config["file"]
@@ -43,8 +43,8 @@ def run_transforms(doc_id :str, filename: str, transforms: list):
 
         print(f"🔧 Transformed {doc_id} by {transform}")
 
-def run_prepare(config):
+def run_prepare(doc_configs):
     with Pool(4) as p:
         args = [(doc_id, doc_config["file"], doc_config.get("transforms", []))
-                for doc_id, doc_config in config["docs"].items()]
+                for doc_id, doc_config in doc_configs.items()]
         p.starmap(run_transforms, args)

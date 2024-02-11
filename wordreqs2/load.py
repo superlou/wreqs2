@@ -48,13 +48,16 @@ class ReqDB:
         self.traces: pd.DataFrame = self.build_traces_table(config)
 
     def build_reqs_table(self, config) -> pd.DataFrame:
+        empty = pd.DataFrame(columns=["doc_id", "req_id", "contents"])
         spec_req_dfs = [get_reqs_as_df(doc_id) for doc_id in config["docs"]]
-        req_df = pd.concat(spec_req_dfs, ignore_index=True)
+        req_df = pd.concat([empty] + spec_req_dfs, ignore_index=True)
         return req_df
 
     def build_traces_table(self, config) -> pd.DataFrame:
+        empty = pd.DataFrame(columns=["doc_id", "req_id", "to_doc_id", "to_req_id"])
+
         spec_trace_dfs = [get_trace_as_df(doc_id, doc_config["parent"])
                         for doc_id, doc_config in config["docs"].items()
                         if "parent" in doc_config]
-        trace_df = pd.concat(spec_trace_dfs, ignore_index=True)
+        trace_df = pd.concat([empty] + spec_trace_dfs, ignore_index=True)
         return trace_df

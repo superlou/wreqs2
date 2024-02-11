@@ -1,3 +1,4 @@
+from typing import Optional
 import pandas as pd
 from rich.console import Console
 from rich.table import Table
@@ -24,7 +25,7 @@ def find_next_id(reqs, prefix_map) -> pd.Series:
     return next_req_id
 
 
-def run_status(db: ReqDB, config: dict):
+def run_status(db: ReqDB, config: dict, docs_filter: Optional[list[str]]=None):
     prefix_map = {doc_id: doc_config.get("req_id_prefix", "")
                   for doc_id, doc_config in config["docs"].items()}
 
@@ -36,6 +37,9 @@ def run_status(db: ReqDB, config: dict):
     table.add_column("Doc ID")
     table.add_column("Next ID")
     table.add_column("Count", justify="right")
+
+    docs_filter = docs_filter or config["docs"].keys()
+    status = status[status.index.isin(docs_filter)]
 
     for doc_id, row in status.iterrows():
         table.add_row(str(doc_id), str(row.next_req_id), str(row.req_id))

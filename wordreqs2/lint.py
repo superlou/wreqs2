@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Self, Optional
 from dataclasses import dataclass
 from rich.console import Console
 from rich.table import Table
@@ -93,7 +93,7 @@ class TracedReqNotFound(Lint):
         return lints
 
 
-def run_lint(db, config):
+def run_lint(db, config, docs_filter: Optional[list[str]]=None):
     lints = []
     lints += MalformedReqID.check(db.reqs, config)
     lints += DuplicateID.check(db.reqs)
@@ -101,6 +101,9 @@ def run_lint(db, config):
     lints += TracedReqNotFound.check(db.reqs, db.traces)
 
     console = Console(soft_wrap=True, highlight=False)
+
+    docs_filter = docs_filter or config["docs"].keys()
+    lints = [lint for lint in lints if lint.doc_id in docs_filter]
 
     for lint in lints:
         console.print(lint.msg.split("\n")[0], overflow="ellipsis")
