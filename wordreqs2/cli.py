@@ -2,7 +2,7 @@ import tomllib
 from pathlib import Path
 import pandas as pd
 import argparse
-from .load import build_tables, get_spec
+from .load import get_spec, ReqDB
 from .prepare import run_prepare, copy_docs
 from .status import run_status
 from .lint import run_lint
@@ -26,11 +26,11 @@ def run_cli():
         if args.action == "update":
             return
 
-    req_df, trace_df = build_tables(config)
+    db = ReqDB(config)
 
     if args.action == "trace":
-        run_traces(config, req_df, trace_df)
+        run_traces(db, config)
     elif args.action == "status":
-        run_status(req_df, config)
+        run_status(db, config)
     elif args.action == "lint":
-        run_lint(req_df, trace_df, config)
+        run_lint(db, config)

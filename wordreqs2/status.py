@@ -1,6 +1,7 @@
 import pandas as pd
 from rich.console import Console
 from rich.table import Table
+from .load import ReqDB
 
 
 def int_or_default(x: str, default: int):
@@ -23,12 +24,12 @@ def find_next_id(reqs, prefix_map) -> pd.Series:
     return next_req_id
 
 
-def run_status(reqs: pd.DataFrame, config: dict):
+def run_status(db: ReqDB, config: dict):
     prefix_map = {doc_id: doc_config.get("req_id_prefix", "")
                   for doc_id, doc_config in config["docs"].items()}
 
-    req_counts = reqs.groupby("doc_id").count().req_id
-    next_req_id = find_next_id(reqs, prefix_map)
+    req_counts = db.reqs.groupby("doc_id").count().req_id
+    next_req_id = find_next_id(db.reqs, prefix_map)
     status = pd.concat([req_counts, next_req_id], axis=1)
 
     table = Table()

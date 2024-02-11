@@ -42,15 +42,19 @@ def get_trace_as_df(doc_id: str, parent_doc_id: str) -> pd.DataFrame:
     return pd.DataFrame(data)
 
 
-def build_tables(config) -> tuple[pd.DataFrame, pd.DataFrame]:
-    # Table of requirements
-    spec_req_dfs = [get_reqs_as_df(doc_id) for doc_id in config["docs"]]
-    req_df = pd.concat(spec_req_dfs, ignore_index=True)
+class ReqDB:
+    def __init__(self, config):
+        self.reqs: pd.DataFrame = self.build_reqs_table(config)
+        self.traces: pd.DataFrame = self.build_traces_table(config)
 
-    # Trace table
-    spec_trace_dfs = [get_trace_as_df(doc_id, doc_config["parent"])
-                      for doc_id, doc_config in config["docs"].items()
-                      if "parent" in doc_config]
-    trace_df = pd.concat(spec_trace_dfs, ignore_index=True)
+    def build_reqs_table(self, config) -> pd.DataFrame:
+        spec_req_dfs = [get_reqs_as_df(doc_id) for doc_id in config["docs"]]
+        req_df = pd.concat(spec_req_dfs, ignore_index=True)
+        return req_df
 
-    return req_df, trace_df
+    def build_traces_table(self, config) -> pd.DataFrame:
+        spec_trace_dfs = [get_trace_as_df(doc_id, doc_config["parent"])
+                        for doc_id, doc_config in config["docs"].items()
+                        if "parent" in doc_config]
+        trace_df = pd.concat(spec_trace_dfs, ignore_index=True)
+        return trace_df

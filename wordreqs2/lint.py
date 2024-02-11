@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from rich.console import Console
 from rich.table import Table
 import pandas as pd
+from .load import ReqDB
 
 
 class Lint:
@@ -92,12 +93,12 @@ class TracedReqNotFound(Lint):
         return lints
 
 
-def run_lint(req_df, trace_df, config):
+def run_lint(db, config):
     lints = []
-    lints += MalformedReqID.check(req_df, config)
-    lints += DuplicateID.check(req_df)
-    lints += NoShallOrMay.check(req_df)
-    lints += TracedReqNotFound.check(req_df, trace_df)
+    lints += MalformedReqID.check(db.reqs, config)
+    lints += DuplicateID.check(db.reqs)
+    lints += NoShallOrMay.check(db.reqs)
+    lints += TracedReqNotFound.check(db.reqs, db.traces)
 
     console = Console(soft_wrap=True, highlight=False)
 
