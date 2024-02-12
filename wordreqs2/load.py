@@ -42,6 +42,16 @@ def get_trace_as_df(doc_id: str, parent_doc_id: str) -> pd.DataFrame:
     return pd.DataFrame(data)
 
 
+def determine_is_deleted(reqs: pd.DataFrame, config: dict):
+    reqs["is_deleted"] = False
+    deleted_text_map = {doc_id: doc_config["deleted"]
+                        for doc_id, doc_config in config["docs"].items()
+                        if "deleted" in doc_config}
+
+    for doc_id, deleted_text in deleted_text_map.items():
+        reqs.loc[reqs.doc_id == doc_id, "is_deleted"] = (reqs.contents == deleted_text)
+
+
 class ReqDB:
     def __init__(self, config):
         self.reqs: pd.DataFrame = self.build_reqs_table(config)
@@ -51,6 +61,7 @@ class ReqDB:
         empty = pd.DataFrame(columns=["doc_id", "req_id", "contents"])
         spec_req_dfs = [get_reqs_as_df(doc_id) for doc_id in config["docs"]]
         req_df = pd.concat([empty] + spec_req_dfs, ignore_index=True)
+        determine_is_deleted(req_df, config)
         return req_df
 
     def build_traces_table(self, config) -> pd.DataFrame:

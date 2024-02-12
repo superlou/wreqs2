@@ -60,7 +60,7 @@ class NoShallOrMay(BasicDocReqLint):
     def check(cls, reqs) -> list[Self]:
         lints = [
             cls(req.doc_id, req.req_id, req.contents) 
-            for i, req in reqs[~reqs.contents.str.contains("shall|may")].iterrows()
+            for i, req in reqs[~reqs.contents.str.contains("shall|may") & ~reqs.is_deleted].iterrows()
         ]
         return lints
 

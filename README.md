@@ -27,13 +27,15 @@ The contents of `wreqs.toml` are:
 [docs.sys]
 file = "system_spec.docx"
 transforms = ["docx-to-md"]
-req_id_prefix = "sys-"
+req_id_prefix = "sys-"  # Requirements in this doc starts with this.
+deleted = "Deleted."    # Requirements with this text were deleted.
 
 [docs.moda]
 file = "system_spec.docx"
 transforms = ["docx-to-md"]
 req_id_prefix = "moda-"
 parent = "sys"
+deleted = "(deleted)"
 
 [docs.modb]
 file = "system_spec.docx"
