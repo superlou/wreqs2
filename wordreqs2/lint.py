@@ -2,6 +2,7 @@ from typing import Self, Optional
 from dataclasses import dataclass
 from rich.console import Console
 from rich.table import Table
+from rich import box
 import pandas as pd
 from .load import ReqDB
 
@@ -124,5 +125,8 @@ def run_lint(db, config, docs_filter: Optional[list[str]]=None):
     
     for lint_type, row in df.iterrows():
         table.add_row(str(lint_type), *[str(field) for field in row.values])
+
+    table.add_section()
+    table.add_row("All", *[str(field) for field in df.stack().groupby("doc_id").sum().values])
 
     console.print(table)
