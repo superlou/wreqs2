@@ -1,5 +1,6 @@
 import pandas as pd
 from . import md_spec
+from .md_spec import Spec
 
 
 def get_spec(doc_id: str):
@@ -7,8 +8,7 @@ def get_spec(doc_id: str):
     return spec
 
 
-def get_reqs_as_df(doc_id: str) -> pd.DataFrame:
-    spec = get_spec(doc_id)
+def get_reqs_as_df(doc_id: str, spec: Spec) -> pd.DataFrame:
     data = {
         "doc_id": [],
         "req_id": [],
@@ -23,8 +23,7 @@ def get_reqs_as_df(doc_id: str) -> pd.DataFrame:
     return pd.DataFrame(data)
 
 
-def get_trace_as_df(doc_id: str, parent_doc_id: str) -> pd.DataFrame:
-    spec = get_spec(doc_id)
+def get_trace_as_df(doc_id: str, parent_doc_id: str, spec: Spec) -> pd.DataFrame:
     data = {
         "doc_id": [],
         "req_id": [],
@@ -42,7 +41,7 @@ def get_trace_as_df(doc_id: str, parent_doc_id: str) -> pd.DataFrame:
     return pd.DataFrame(data)
 
 
-def determine_is_deleted(reqs: pd.DataFrame, config: dict):
+def add_is_deleted(reqs: pd.DataFrame, config: dict):
     reqs["is_deleted"] = False
     deleted_text_map = {doc_id: doc_config["deleted"]
                         for doc_id, doc_config in config["docs"].items()
@@ -54,21 +53,22 @@ def determine_is_deleted(reqs: pd.DataFrame, config: dict):
 
 class ReqDB:
     def __init__(self, config):
+        self.specs = {doc_id: get_spec(doc_id) for doc_id in config["docs"]}
         self.reqs: pd.DataFrame = self.build_reqs_table(config)
         self.traces: pd.DataFrame = self.build_traces_table(config)
 
     def build_reqs_table(self, config) -> pd.DataFrame:
         empty = pd.DataFrame(columns=["doc_id", "req_id", "contents"])
-        spec_req_dfs = [get_reqs_as_df(doc_id) for doc_id in config["docs"]]
+        spec_req_dfs = [get_reqs_as_df(doc_id, spec) for doc_id, spec in self.specs.items()]
         req_df = pd.concat([empty] + spec_req_dfs, ignore_index=True)
-        determine_is_deleted(req_df, config)
+        add_is_deleted(req_df, config)
         return req_df
 
     def build_traces_table(self, config) -> pd.DataFrame:
         empty = pd.DataFrame(columns=["doc_id", "req_id", "to_doc_id", "to_req_id"])
 
-        spec_trace_dfs = [get_trace_as_df(doc_id, doc_config["parent"])
-                        for doc_id, doc_config in config["docs"].items()
-                        if "parent" in doc_config]
+        spec_trace_dfs = [get_trace_as_df(doc_id, doc_config["parent"], self.specs[doc_id])
+                          for doc_id, doc_config in config["docs"].items()
+                          if "parent" in doc_config]
         trace_df = pd.concat([empty] + spec_trace_dfs, ignore_index=True)
         return trace_df

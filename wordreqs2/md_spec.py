@@ -121,7 +121,7 @@ class ParseState(Enum):
     END = 4
 
 
-def parse_file(filename):
+def parse_file(filename) -> Spec:
     with open(filename, encoding='utf8') as md_file:
         spec = parse_lines(md_file.readlines())
         spec.filename = filename
