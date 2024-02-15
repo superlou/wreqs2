@@ -38,7 +38,7 @@ def get_signals_as_df(doc_id: str, spec: Spec) -> pd.DataFrame:
             data["name"].append(signal)
             data["modified"].append(False)
         
-        for signal in req.signals:
+        for signal in req.mod_signals:
             data["doc_id"].append(doc_id)
             data["req_id"].append(req.id)
             data["name"].append(signal)

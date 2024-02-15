@@ -66,6 +66,34 @@ class NoShallOrMay(BasicDocReqLint):
         return lints
 
 
+class ModifiedSignalNotUsed(Lint):
+    pass
+
+
+@dataclass
+class UsesUnsetSignal(Lint):
+    doc_id: str
+    req_id: str
+    signal: str
+
+    @property
+    def msg(self):
+        return f"{self.doc_id}:{type(self).__name__} \\[{self.req_id}] Signal \"{self.signal}\" is never set"
+
+    @classmethod
+    def signal_not_set(cls, signal: str, signals: pd.DataFrame) -> bool:
+        return len(signals[(signals["name"] == signal) & (signals.modified == True)]) == 0
+
+    @classmethod
+    def check(cls, reqs, signals) -> list[Self]:
+        lints = []
+        for i, signal in signals[signals.modified == False].iterrows():
+            if cls.signal_not_set(signal["name"], signals):
+                lints.append(cls(signal.doc_id, signal.req_id, signal["name"]))
+
+        return lints
+
+
 class TracedReqNotFound(Lint):
     def __init__(self, doc_id, req_id, parent_doc_id, parent_req_id):
         self.doc_id = doc_id
@@ -100,6 +128,7 @@ def run_lint(db, config, docs_filter: Optional[list[str]]=None):
     lints += DuplicateID.check(db.reqs)
     lints += NoShallOrMay.check(db.reqs)
     lints += TracedReqNotFound.check(db.reqs, db.traces)
+    lints += UsesUnsetSignal.check(db.reqs, db.signals)
 
     console = Console(soft_wrap=True, highlight=False)
 
