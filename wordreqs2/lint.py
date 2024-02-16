@@ -71,7 +71,7 @@ class ModifiedSignalNotUsed(Lint):
 
 
 @dataclass
-class UsesUnsetSignal(Lint):
+class UnsetSignal(Lint):
     doc_id: str
     req_id: str
     signal: str
@@ -81,14 +81,34 @@ class UsesUnsetSignal(Lint):
         return f"{self.doc_id}:{type(self).__name__} \\[{self.req_id}] Signal \"{self.signal}\" is never set"
 
     @classmethod
-    def signal_not_set(cls, signal: str, signals: pd.DataFrame) -> bool:
-        return len(signals[(signals["name"] == signal) & (signals.modified == True)]) == 0
+    def check(cls, signals) -> list[Self]:
+        lints = []
+        set_signals = signals[signals.modified]["name"].unique()
+
+        for i, signal in signals[signals.modified == False].iterrows():
+            if signal["name"] not in set_signals:
+                lints.append(cls(signal.doc_id, signal.req_id, signal["name"]))
+
+        return lints
+
+
+@dataclass
+class UnusedSignal(Lint):
+    doc_id: str
+    req_id: str
+    signal: str
+
+    @property
+    def msg(self):
+        return f"{self.doc_id}:{type(self).__name__} \\[{self.req_id}] Signal \"{self.signal}\" is never used"
 
     @classmethod
-    def check(cls, reqs, signals) -> list[Self]:
+    def check(cls, signals) -> list[Self]:
         lints = []
-        for i, signal in signals[signals.modified == False].iterrows():
-            if cls.signal_not_set(signal["name"], signals):
+        unset_signals = signals[signals.modified == False]["name"].unique()
+
+        for i, signal in signals[signals.modified].iterrows():
+            if signal["name"] not in unset_signals:
                 lints.append(cls(signal.doc_id, signal.req_id, signal["name"]))
 
         return lints
@@ -128,7 +148,8 @@ def run_lint(db, config, docs_filter: Optional[list[str]]=None):
     lints += DuplicateID.check(db.reqs)
     lints += NoShallOrMay.check(db.reqs)
     lints += TracedReqNotFound.check(db.reqs, db.traces)
-    lints += UsesUnsetSignal.check(db.reqs, db.signals)
+    lints += UnsetSignal.check(db.signals)
+    lints += UnusedSignal.check(db.signals)
 
     console = Console(soft_wrap=True, highlight=False)
 
