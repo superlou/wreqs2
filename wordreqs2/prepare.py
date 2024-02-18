@@ -1,5 +1,6 @@
 import shutil
 import os
+from pathlib import Path
 import subprocess
 from multiprocessing import Pool
 from .docx_to_md import word_to_md, newline_after_meta
@@ -32,6 +33,7 @@ def copy_docs(doc_configs):
 
 
 def run_transforms(doc_id :str, filename: str, transforms: list):
+    Path("tmp").mkdir(exist_ok=True)
     md_filename = f"tmp/{doc_id}.md"
     shutil.copy(filename, md_filename)
 
@@ -42,6 +44,7 @@ def run_transforms(doc_id :str, filename: str, transforms: list):
             newline_after_meta(md_filename, md_filename)
 
         print(f"🔧 Transformed {doc_id} by {transform}")
+
 
 def run_prepare(doc_configs):
     with Pool(4) as p:

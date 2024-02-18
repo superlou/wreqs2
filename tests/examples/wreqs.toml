@@ -1,0 +1,4 @@
+[docs.sys]
+file = "tests/examples/sys.docx"
+transforms = ["docx-to-md"]
+req_id_prefix = "sys"
