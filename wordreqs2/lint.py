@@ -81,12 +81,13 @@ class UnsetSignal(Lint):
         return f"{self.doc_id}:{type(self).__name__} \\[{self.req_id}] Signal \"{self.signal}\" is never set"
 
     @classmethod
-    def check(cls, signals) -> list[Self]:
+    def check(cls, signals, spec_inputs) -> list[Self]:
         lints = []
         set_signals = signals[signals.modified]["name"].unique()
 
         for i, signal in signals[signals.modified == False].iterrows():
-            if signal["name"] not in set_signals:
+            name = signal["name"]
+            if name not in set_signals and name not in spec_inputs[signal.doc_id]:
                 lints.append(cls(signal.doc_id, signal.req_id, signal["name"]))
 
         return lints
@@ -103,12 +104,13 @@ class UnusedSignal(Lint):
         return f"{self.doc_id}:{type(self).__name__} \\[{self.req_id}] Signal \"{self.signal}\" is never used"
 
     @classmethod
-    def check(cls, signals) -> list[Self]:
+    def check(cls, signals, spec_outputs) -> list[Self]:
         lints = []
         unset_signals = signals[signals.modified == False]["name"].unique()
 
         for i, signal in signals[signals.modified].iterrows():
-            if signal["name"] not in unset_signals:
+            name = signal["name"]
+            if name not in unset_signals and name not in spec_outputs[signal.doc_id]:
                 lints.append(cls(signal.doc_id, signal.req_id, signal["name"]))
 
         return lints
@@ -148,8 +150,18 @@ def run_lint(db, config, docs_filter: Optional[list[str]]=None):
     lints += DuplicateID.check(db.reqs)
     lints += NoShallOrMay.check(db.reqs)
     lints += TracedReqNotFound.check(db.reqs, db.traces)
-    lints += UnsetSignal.check(db.signals)
-    lints += UnusedSignal.check(db.signals)
+
+    spec_inputs = {
+        doc_id: doc_config.get("inputs", [])
+        for doc_id, doc_config in config["docs"].items()
+    }
+    lints += UnsetSignal.check(db.signals, spec_inputs)
+
+    spec_outputs = {
+        doc_id: doc_config.get("outputs", [])
+        for doc_id, doc_config in config["docs"].items()
+    }
+    lints += UnusedSignal.check(db.signals, spec_outputs)
 
     console = Console(soft_wrap=True, highlight=False)
 
