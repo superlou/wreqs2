@@ -1,12 +1,14 @@
 import tomllib
+from wordreqs2.config import ProjConfig
 from wordreqs2.load import ReqDB
 from wordreqs2.prepare import run_prepare, copy_docs
 from wordreqs2.lint import check_lints, NoShallOrMay
 
 
-def build_req_db(config_file) -> tuple[ReqDB, dict]:
-    config = tomllib.load(open(config_file, "rb"))
-    run_prepare(config["docs"])
+def build_req_db(config_file) -> tuple[ReqDB, ProjConfig]:
+    config_dict = tomllib.load(open(config_file, "rb"))
+    config = ProjConfig.from_dict(config_dict)    
+    run_prepare(config.docs)
     return ReqDB(config), config
 
 

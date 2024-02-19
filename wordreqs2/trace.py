@@ -2,6 +2,8 @@ from typing import Optional
 from pandas import DataFrame
 from rich.console import Console
 from rich.table import Table
+
+from wordreqs2.config import ProjConfig
 from .load import ReqDB
 
 
@@ -36,15 +38,15 @@ def trace_down(parent: str, children: list[str], reqs: DataFrame, traces: DataFr
     console.print(table)
 
 
-def run_traces(db: ReqDB, config, docs_filter: Optional[list[str]]=None):
-    docs_filter = docs_filter or config["docs"].keys()
+def run_traces(db: ReqDB, config: ProjConfig, docs_filter: Optional[list[str]]=None):
+    docs_filter = docs_filter or list(config.docs.keys())
 
-    for trace_id, trace_config in config["traces"].items():
-        involved_docs = [trace_config["from"]] + trace_config["to"]
+    for trace_id, trace_config in config.traces.items():
+        involved_docs = [trace_config.from_] + trace_config.to
         if (set(involved_docs).intersection(set(docs_filter))) == set():
             continue
 
-        if trace_config["direction"] == "down":
-            parent = trace_config["from"]
-            children = trace_config["to"]
+        if trace_config.direction == "down":
+            parent = trace_config.from_
+            children = trace_config.to
             trace_down(parent, children, db.reqs, db.traces)

@@ -4,6 +4,8 @@ from rich.console import Console
 from rich.table import Table
 import pandas as pd
 
+from wordreqs2.config import ProjConfig
+
 
 class Lint:
     def __init__(self, doc_id):
@@ -23,10 +25,10 @@ class BasicDocReqLint(Lint):
 
 class MalformedReqID(BasicDocReqLint):
     @classmethod
-    def check(cls, reqs, config) -> list[Self]:
+    def check(cls, reqs, config: ProjConfig) -> list[Self]:
         lints = []
 
-        reqs["prefix"] = reqs.doc_id.apply(lambda doc_id: config["docs"][doc_id]["req_id_prefix"])
+        reqs["prefix"] = reqs.doc_id.apply(lambda doc_id: config.docs[doc_id].req_id_prefix)
 
         for i, req in reqs.iterrows():
             is_bad = False
@@ -148,7 +150,7 @@ class TracedReqNotFound(Lint):
         return lints
 
 
-def check_lints(db, config) -> list[Lint]:
+def check_lints(db, config: ProjConfig) -> list[Lint]:
     lints = []
     lints += MalformedReqID.check(db.reqs, config)
     lints += DuplicateID.check(db.reqs)
@@ -156,27 +158,28 @@ def check_lints(db, config) -> list[Lint]:
     lints += TracedReqNotFound.check(db.reqs, db.traces)
 
     spec_inputs = {
-        doc_id: doc_config.get("inputs", [])
-        for doc_id, doc_config in config["docs"].items()
+        doc_id: doc_config.inputs
+        for doc_id, doc_config in config.docs.items()
     }
     lints += UnsetSignal.check(db.signals, spec_inputs)
 
     spec_outputs = {
-        doc_id: doc_config.get("outputs", [])
-        for doc_id, doc_config in config["docs"].items()
+        doc_id: doc_config.outputs
+        for doc_id, doc_config in config.docs.items()
     }
     lints += UnusedSignal.check(db.signals, spec_outputs)
 
     return lints
 
 
-def run_lint(db, config, docs_filter: Optional[list[str]]=None):
+def run_lint(db, config: ProjConfig, docs_filter: Optional[list[str]]=None):
     lints = check_lints(db, config)
 
     console = Console(soft_wrap=True, highlight=False)
 
-    docs_filter = docs_filter or config["docs"].keys()
-    lints = [lint for lint in lints if lint.doc_id in docs_filter]
+    docs_filter = docs_filter or list(config.docs.keys())
+    lints = [lint for lint in lints
+             if lint.doc_id in docs_filter]
 
     for lint in lints:
         console.print(lint.msg.split("\n")[0], overflow="ellipsis")

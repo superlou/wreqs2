@@ -1,6 +1,7 @@
 import pandas as pd
 from . import md_spec
 from .md_spec import Spec
+from .config import ProjConfig
 
 
 def get_spec(doc_id: str):
@@ -65,24 +66,24 @@ def get_trace_as_df(doc_id: str, parent_doc_id: str, spec: Spec) -> pd.DataFrame
     return pd.DataFrame(data)
 
 
-def add_is_deleted(reqs: pd.DataFrame, config: dict):
+def add_is_deleted(reqs: pd.DataFrame, config: ProjConfig):
     reqs["is_deleted"] = False
-    deleted_text_map = {doc_id: doc_config["deleted"]
-                        for doc_id, doc_config in config["docs"].items()
-                        if "deleted" in doc_config}
+    deleted_text_map = {doc_id: doc_config.deleted
+                        for doc_id, doc_config in config.docs.items()
+                        if doc_config.deleted is not None}
 
     for doc_id, deleted_text in deleted_text_map.items():
         reqs.loc[reqs.doc_id == doc_id, "is_deleted"] = (reqs.contents == deleted_text)
 
 
 class ReqDB:
-    def __init__(self, config):
-        self.specs = {doc_id: get_spec(doc_id) for doc_id in config["docs"]}
+    def __init__(self, config: ProjConfig):
+        self.specs = {doc_id: get_spec(doc_id) for doc_id in config.docs.keys()}
         self.reqs = self.build_reqs_table(config)
         self.traces = self.build_traces_table(config)
         self.signals = self.build_signals_table(config)
 
-    def build_reqs_table(self, config) -> pd.DataFrame:
+    def build_reqs_table(self, config: ProjConfig) -> pd.DataFrame:
         empty = pd.DataFrame(columns=["doc_id", "req_id", "contents"])
         spec_req_dfs = [get_reqs_as_df(doc_id, spec)
                         for doc_id, spec in self.specs.items()]
@@ -90,16 +91,15 @@ class ReqDB:
         add_is_deleted(req_df, config)
         return req_df
 
-    def build_traces_table(self, config) -> pd.DataFrame:
+    def build_traces_table(self, config: ProjConfig) -> pd.DataFrame:
         empty = pd.DataFrame(columns=["doc_id", "req_id", "to_doc_id", "to_req_id"])
-
-        spec_trace_dfs = [get_trace_as_df(doc_id, doc_config["parent"], self.specs[doc_id])
-                          for doc_id, doc_config in config["docs"].items()
-                          if "parent" in doc_config]
+        spec_trace_dfs = [get_trace_as_df(doc_id, doc_config.parent, self.specs[doc_id])
+                          for doc_id, doc_config in config.docs.items()
+                          if doc_config.parent is not None]
         trace_df = pd.concat([empty] + spec_trace_dfs, ignore_index=True)
         return trace_df
 
-    def build_signals_table(self, config) -> pd.DataFrame:
+    def build_signals_table(self, config: ProjConfig) -> pd.DataFrame:
         empty = pd.DataFrame(columns=["name", "modified", "doc_id", "req_id"])
         signals_dfs = [get_signals_as_df(doc_id, spec)
                        for doc_id, spec in self.specs.items()]

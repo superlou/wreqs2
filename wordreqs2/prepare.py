@@ -3,19 +3,21 @@ import os
 from pathlib import Path
 import subprocess
 from multiprocessing import Pool
+
+from wordreqs2.config import DocConfig
 from .docx_to_md import word_to_md, newline_after_meta
 
 
-def copy_docs(doc_configs):
+def copy_docs(doc_configs: dict[str, DocConfig]):
     # Using shutil copy gets permissions denied if the file is open.
     # Using Windows' xcopy is a workaround.
     # Also, xcopy doesn't always seem to have the /-I flag, so a file
     # is made manually first, so it doesn't prompt if the dst is a
     # file or folder.
     for doc_id, doc_config in doc_configs.items():
-        if "import_from" in doc_config:
-            src = doc_config["import_from"]
-            dst = doc_config["file"]
+        if doc_config.import_from is not None:
+            src = doc_config.import_from
+            dst = doc_config.file
 
             if not os.path.exists(dst):
                 with open(dst, "w"):
@@ -32,7 +34,7 @@ def copy_docs(doc_configs):
             print(f"🚚 Imported {doc_id} to project")
 
 
-def run_transforms(doc_id :str, filename: str, transforms: list):
+def run_transforms(doc_id: str, filename: str, transforms: list):
     Path("tmp").mkdir(exist_ok=True)
     md_filename = f"tmp/{doc_id}.md"
     shutil.copy(filename, md_filename)
@@ -46,8 +48,8 @@ def run_transforms(doc_id :str, filename: str, transforms: list):
         print(f"🔧 Transformed {doc_id} by {transform}")
 
 
-def run_prepare(doc_configs):
+def run_prepare(doc_configs: dict[str, DocConfig]):
     with Pool(4) as p:
-        args = [(doc_id, doc_config["file"], doc_config.get("transforms", []))
+        args = [(doc_id, doc_config.file, doc_config.transforms)
                 for doc_id, doc_config in doc_configs.items()]
         p.starmap(run_transforms, args)

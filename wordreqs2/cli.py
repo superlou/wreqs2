@@ -1,8 +1,9 @@
 import tomllib
 from pathlib import Path
-import pandas as pd
 import argparse
-from .load import get_spec, ReqDB
+
+from wordreqs2.config import ProjConfig
+from .load import ReqDB
 from .prepare import run_prepare, copy_docs
 from .status import run_status
 from .lint import run_lint
@@ -17,16 +18,16 @@ def run_cli():
     parser.add_argument("-d", "--documents", nargs="+")
     args = parser.parse_args()
 
-    Path("tmp").mkdir(exist_ok=True)
-    config = tomllib.load(open("wreqs.toml", "rb"))
+    config_dict = tomllib.load(open("wreqs.toml", "rb"))
+    config = ProjConfig.from_dict(config_dict)    
 
     if args.action == "update" or not args.skip_update:
         if args.documents:
             doc_configs = {doc_id: doc_config
-                           for doc_id, doc_config in config["docs"].items()
+                           for doc_id, doc_config in config.docs.items()
                            if doc_id in args.documents}
         else:
-            doc_configs = config["docs"]
+            doc_configs = config.docs
 
         copy_docs(doc_configs)
         run_prepare(doc_configs)

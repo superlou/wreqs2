@@ -2,6 +2,8 @@ from typing import Optional
 import pandas as pd
 from rich.console import Console
 from rich.table import Table
+
+from wordreqs2.config import ProjConfig
 from .load import ReqDB
 
 
@@ -25,9 +27,9 @@ def find_next_id(reqs, prefix_map) -> pd.Series:
     return next_req_id
 
 
-def run_status(db: ReqDB, config: dict, docs_filter: Optional[list[str]]=None):
-    prefix_map = {doc_id: doc_config.get("req_id_prefix", "")
-                  for doc_id, doc_config in config["docs"].items()}
+def run_status(db: ReqDB, config: ProjConfig, docs_filter: Optional[list[str]]=None):
+    prefix_map = {doc_id: doc_config.req_id_prefix
+                  for doc_id, doc_config in config.docs.items()}
 
     req_counts = db.reqs.groupby("doc_id").count().req_id
     next_req_id = find_next_id(db.reqs, prefix_map)
@@ -38,7 +40,7 @@ def run_status(db: ReqDB, config: dict, docs_filter: Optional[list[str]]=None):
     table.add_column("Next ID")
     table.add_column("Count", justify="right")
 
-    docs_filter = docs_filter or config["docs"].keys()
+    docs_filter = docs_filter or list(config.docs.keys())
     status = status[status.index.isin(docs_filter)]
 
     for doc_id, row in status.iterrows():
