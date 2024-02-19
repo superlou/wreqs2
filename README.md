@@ -10,6 +10,12 @@ cd wreqs2
 pip install .
 ```
 
+## Testing
+
+On Windows, pytest needs to be set for UTF-8: 
+
+```python -X utf8 -m pytest```
+
 ## Setup
 Create a folder for your wreqs project. Place your documents in it and a configuration file named `wreqs.toml`.
 

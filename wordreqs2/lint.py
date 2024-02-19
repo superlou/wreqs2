@@ -2,9 +2,7 @@ from typing import Self, Optional
 from dataclasses import dataclass
 from rich.console import Console
 from rich.table import Table
-from rich import box
 import pandas as pd
-from .load import ReqDB
 
 
 class Lint:
@@ -83,7 +81,10 @@ class UnsetSignal(Lint):
     @classmethod
     def check(cls, signals, spec_inputs) -> list[Self]:
         lints = []
-        set_signals = signals[signals.modified]["name"].unique()
+        try:
+            set_signals = signals[signals.modified]["name"].unique()
+        except KeyError:
+            set_signals = []
 
         for i, signal in signals[signals.modified == False].iterrows():
             name = signal["name"]
@@ -106,7 +107,10 @@ class UnusedSignal(Lint):
     @classmethod
     def check(cls, signals, spec_outputs) -> list[Self]:
         lints = []
-        unset_signals = signals[signals.modified == False]["name"].unique()
+        try:
+            unset_signals = signals[signals.modified == False]["name"].unique()
+        except KeyError:
+            set_signals = []
 
         for i, signal in signals[signals.modified].iterrows():
             name = signal["name"]
@@ -144,7 +148,7 @@ class TracedReqNotFound(Lint):
         return lints
 
 
-def run_lint(db, config, docs_filter: Optional[list[str]]=None):
+def check_lints(db, config) -> list[Lint]:
     lints = []
     lints += MalformedReqID.check(db.reqs, config)
     lints += DuplicateID.check(db.reqs)
@@ -162,6 +166,12 @@ def run_lint(db, config, docs_filter: Optional[list[str]]=None):
         for doc_id, doc_config in config["docs"].items()
     }
     lints += UnusedSignal.check(db.signals, spec_outputs)
+
+    return lints
+
+
+def run_lint(db, config, docs_filter: Optional[list[str]]=None):
+    lints = check_lints(db, config)
 
     console = Console(soft_wrap=True, highlight=False)
 
