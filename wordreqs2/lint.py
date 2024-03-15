@@ -70,6 +70,16 @@ class ModifiedSignalNotUsed(Lint):
     pass
 
 
+class UncapitalizedBool(BasicDocReqLint):
+    @classmethod
+    def check(cls, reqs) -> list[Self]:
+        lints = [
+            cls(req.doc_id, req.req_id, req.contents)
+            for i, req in reqs[reqs.contents.str.contains("true|false")].iterrows()
+        ]
+        return lints
+
+
 @dataclass
 class UnsetSignal(Lint):
     doc_id: str
@@ -155,6 +165,7 @@ def check_lints(db, config: ProjConfig) -> list[Lint]:
     lints += MalformedReqID.check(db.reqs, config)
     lints += DuplicateID.check(db.reqs)
     lints += NoShallOrMay.check(db.reqs)
+    lints += UncapitalizedBool.check(db.reqs)
     lints += TracedReqNotFound.check(db.reqs, db.traces)
 
     spec_inputs = {
